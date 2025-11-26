@@ -32,12 +32,17 @@ const getKaohsiungWeather = async (req, res) => {
 
     // 呼叫 CWA API - 一般天氣預報（36小時）
     // API 文件: https://opendata.cwa.gov.tw/dist/opendata-swagger.html
+    // 原始
+    /* const response = await axios.get(
+      `${CWA_API_BASE_URL}/v1/rest/datastore/F-C0032-001`,
+      { */
+    // 修正至桃園
     const response = await axios.get(
       `${CWA_API_BASE_URL}/v1/rest/datastore/F-C0032-001`,
       {
         params: {
           Authorization: CWA_API_KEY,
-          locationName: "宜蘭縣",
+          locationName: "桃園巿",
         },
       }
     );
