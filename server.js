@@ -1,3 +1,4 @@
+// server.js (修正後的版本)
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -16,11 +17,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /**
- * 取得高雄天氣預報
+ * 取得指定城市天氣預報
  * CWA 氣象資料開放平臺 API
  * 使用「一般天氣預報-今明 36 小時天氣預報」資料集
  */
-const getTaoyuanWeather = async (req, res) => {
+const getWeather = async (req, res) => {
   try {
     // 檢查是否有設定 API Key
     if (!CWA_API_KEY) {
@@ -30,30 +31,60 @@ const getTaoyuanWeather = async (req, res) => {
       });
     }
 
+    const city = req.params.city;
+
+    // 驗證城市名稱是否有效 (基於提供的 radio 選項)
+    const validCities = [
+      "宜蘭縣",
+      "花蓮縣",
+      "臺東縣",
+      "澎湖縣",
+      "金門縣",
+      "連江縣",
+      "臺北市",
+      "新北市",
+      "桃園市",
+      "臺中市",
+      "臺南市",
+      "高雄市",
+      "基隆市",
+      "新竹縣",
+      "新竹市",
+      "苗栗縣",
+      "彰化縣",
+      "南投縣",
+      "雲林縣",
+      "嘉義縣",
+      "嘉義市",
+      "屏東縣",
+    ];
+
+    if (!validCities.includes(city)) {
+      return res.status(400).json({
+        error: "無效的城市",
+        message: "請選擇有效的城市名稱",
+      });
+    }
+
     // 呼叫 CWA API - 一般天氣預報（36小時）
     // API 文件: https://opendata.cwa.gov.tw/dist/opendata-swagger.html
-    // 原始
-    /* const response = await axios.get(
-      `${CWA_API_BASE_URL}/v1/rest/datastore/F-C0032-001`,
-      { */
-    // 修正至桃園
     const response = await axios.get(
       `${CWA_API_BASE_URL}/v1/rest/datastore/F-C0032-001`,
       {
         params: {
           Authorization: CWA_API_KEY,
-          locationName: "桃園市",
+          locationName: city,
         },
       }
     );
 
-    // 取得高雄市的天氣資料
+    // 取得指定城市的天氣資料
     const locationData = response.data.records.location[0];
 
     if (!locationData) {
       return res.status(404).json({
         error: "查無資料",
-        message: "無法取得高雄市天氣資料",
+        message: `無法取得${city}天氣資料`,
       });
     }
 
@@ -136,7 +167,7 @@ app.get("/", (req, res) => {
   res.json({
     message: "歡迎使用 CWA 天氣預報 API",
     endpoints: {
-      Taoyuan: "/api/weather/Taoyuan",
+      weather: "/api/weather/:city (e.g., /api/weather/桃園市)",
       health: "/api/health",
     },
   });
@@ -146,8 +177,8 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
-// 取得高雄天氣預報
-app.get("/api/weather/Taoyuan", getTaoyuanWeather);
+// 取得指定城市天氣預報
+app.get("/api/weather/:city", getWeather);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
